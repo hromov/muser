@@ -30,6 +30,45 @@ type googleAuthResponse struct {
 	EmailVerified string `json:"email_verified"`
 }
 
+func GetMailByToken(r *http.Request) (string, error) {
+	ctx := appengine.NewContext(r)
+	client := urlfetch.Client(ctx)
+	token, err := authtoken.FromRequest(r)
+	if err != nil {
+		glog.Errorf(ctx, "token from request error: %v", err)
+		return "", err
+	}
+	resp, err := client.Get(accesPath + token)
+	if err != nil {
+		glog.Errorf(ctx, "token check error: %v", err)
+		return "", err
+	}
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		glog.Errorf(ctx, "ioutil.ReadAll error: %v", err)
+		return "", err
+	}
+
+	answer := new(googleAuthResponse)
+	err = json.Unmarshal(body, answer)
+	if err != nil {
+		glog.Errorf(ctx, "json.Unmarashal error: %v", err)
+		return "", err
+	}
+
+	expires, err := strconv.Atoi(answer.ExpiresIn)
+	if err != nil {
+		glog.Errorf(ctx, "strconv.Atoi(expires) error: %v", err)
+		return "", err
+	}
+	if expires > 0 {
+		return answer.Email, nil
+	}
+	return "", errors.New("Token expired")
+}
+
 func IsAdmin(r *http.Request) (bool, error) {
 	ctx := appengine.NewContext(r)
 	client := urlfetch.Client(ctx)
