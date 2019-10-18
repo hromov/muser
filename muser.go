@@ -4,14 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
 
 	"github.com/harlow/authtoken"
-	"google.golang.org/appengine"
-	glog "google.golang.org/appengine/log"
-	"google.golang.org/appengine/urlfetch"
 )
 
 const accesPath = "https://www.googleapis.com/oauth2/v3/tokeninfo?access_token="
@@ -30,37 +28,38 @@ type googleAuthResponse struct {
 	EmailVerified string `json:"email_verified"`
 }
 
+// GetMailByToken -
 func GetMailByToken(r *http.Request) (string, error) {
-	ctx := appengine.NewContext(r)
-	client := urlfetch.Client(ctx)
+	// ctx := r.Context()
+	// client := urlfetch.Client(ctx)
 	token, err := authtoken.FromRequest(r)
 	if err != nil {
-		glog.Errorf(ctx, "token from request error: %v", err)
+		log.Printf("token from request error: %v", err)
 		return "", err
 	}
-	resp, err := client.Get(accesPath + token)
+	resp, err := http.Get(accesPath + token)
 	if err != nil {
-		glog.Errorf(ctx, "token check error: %v", err)
+		log.Printf("token check error: %v", err)
 		return "", err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		glog.Errorf(ctx, "ioutil.ReadAll error: %v", err)
+		log.Printf("ioutil.ReadAll error: %v", err)
 		return "", err
 	}
 
 	answer := new(googleAuthResponse)
 	err = json.Unmarshal(body, answer)
 	if err != nil {
-		glog.Errorf(ctx, "json.Unmarashal error: %v", err)
+		log.Printf("json.Unmarashal error: %v", err)
 		return "", err
 	}
 
 	expires, err := strconv.Atoi(answer.ExpiresIn)
 	if err != nil {
-		glog.Errorf(ctx, "strconv.Atoi(expires) error: %v", err)
+		log.Printf("strconv.Atoi(expires) error: %v", err)
 		return "", err
 	}
 	if expires > 0 {
@@ -69,37 +68,38 @@ func GetMailByToken(r *http.Request) (string, error) {
 	return "", errors.New("Token expired")
 }
 
+// IsAdmin - check if admin
 func IsAdmin(r *http.Request) (bool, error) {
-	ctx := appengine.NewContext(r)
-	client := urlfetch.Client(ctx)
+	// ctx := r.Context()
+	//client := urlfetch.Client(ctx)
 	token, err := authtoken.FromRequest(r)
 	if err != nil {
-		glog.Errorf(ctx, "token from request error: %v", err)
+		log.Printf("token from request error: %v", err)
 		return false, err
 	}
-	resp, err := client.Get(accesPath + token)
+	resp, err := http.Get(accesPath + token)
 	if err != nil {
-		glog.Errorf(ctx, "token check error: %v", err)
+		log.Printf("token check error: %v", err)
 		return false, err
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
 
 	if err != nil {
-		glog.Errorf(ctx, "ioutil.ReadAll error: %v", err)
+		log.Printf("ioutil.ReadAll error: %v", err)
 		return false, err
 	}
 
 	answer := new(googleAuthResponse)
 	err = json.Unmarshal(body, answer)
 	if err != nil {
-		glog.Errorf(ctx, "json.Unmarashal error: %v", err)
+		log.Printf("json.Unmarashal error: %v", err)
 		return false, err
 	}
 
 	expires, err := strconv.Atoi(answer.ExpiresIn)
 	if err != nil {
-		glog.Errorf(ctx, "strconv.Atoi(expires) error: %v", err)
+		log.Printf("strconv.Atoi(expires) error: %v", err)
 		return false, err
 	}
 	if expires > 0 {
