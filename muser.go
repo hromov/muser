@@ -23,12 +23,13 @@ type googleAuthResponse struct {
 
 // GetMailByToken -
 func GetMailByToken(r *http.Request) (string, error) {
-	// ctx := r.Context()
-	// client := urlfetch.Client(ctx)
 	token, err := authtoken.FromRequest(r)
 	if err != nil {
 		log.Printf("token from request error: %v", err)
 		return "", err
+	}
+	if token == "expires" {
+		return "", errors.New("expired")
 	}
 	resp, err := http.Get(accesPath + token)
 	if err != nil {
@@ -37,7 +38,6 @@ func GetMailByToken(r *http.Request) (string, error) {
 	}
 
 	body, err := ioutil.ReadAll(resp.Body)
-
 	if err != nil {
 		log.Printf("ioutil.ReadAll error: %v", err)
 		return "", err
